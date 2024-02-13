@@ -121,33 +121,33 @@ void SdpSession::fromPj(const pjmedia_sdp_session &sdp)
     wholeSdp = (len > -1? string(buf, len): "");
 #else
     wholeSdp = "";
-#endif    
+#endif
     pjSdpSession = (void *)&sdp;
 }
 
 void MediaTransportInfo::fromPj(const pjmedia_transport_info &info)
 {
     char straddr[PJ_INET6_ADDRSTRLEN+10];
-   
-    localRtpName = localRtcpName = srcRtpName = srcRtcpName = "";    
-    if (pj_sockaddr_has_addr(&info.sock_info.rtp_addr_name)) { 
-        pj_sockaddr_print(&info.sock_info.rtp_addr_name, straddr, 
+
+    localRtpName = localRtcpName = srcRtpName = srcRtcpName = "";
+    if (pj_sockaddr_has_addr(&info.sock_info.rtp_addr_name)) {
+        pj_sockaddr_print(&info.sock_info.rtp_addr_name, straddr,
                           sizeof(straddr), 3);
         localRtpName = straddr;
     }
 
-    if (pj_sockaddr_has_addr(&info.sock_info.rtcp_addr_name)) { 
-        pj_sockaddr_print(&info.sock_info.rtcp_addr_name, straddr, 
+    if (pj_sockaddr_has_addr(&info.sock_info.rtcp_addr_name)) {
+        pj_sockaddr_print(&info.sock_info.rtcp_addr_name, straddr,
                           sizeof(straddr), 3);
         localRtcpName = straddr;
     }
 
-    if (pj_sockaddr_has_addr(&info.src_rtp_name)) {     
+    if (pj_sockaddr_has_addr(&info.src_rtp_name)) {
         pj_sockaddr_print(&info.src_rtp_name, straddr, sizeof(straddr), 3);
         srcRtpName = straddr;
     }
 
-    if (pj_sockaddr_has_addr(&info.src_rtcp_name)) { 
+    if (pj_sockaddr_has_addr(&info.src_rtcp_name)) {
         pj_sockaddr_print(&info.src_rtcp_name, straddr, sizeof(straddr), 3);
         srcRtcpName = straddr;
     }
@@ -172,7 +172,7 @@ CallVidSetStreamParam::CallVidSetStreamParam()
 {
 #if PJSUA_HAS_VIDEO
     pjsua_call_vid_strm_op_param prm;
-    
+
     pjsua_call_vid_strm_op_param_default(&prm);
     this->medIdx = prm.med_idx;
     this->dir    = prm.dir;
@@ -208,7 +208,7 @@ CallSetting::CallSetting(bool useDefaultValues)
 {
     if (useDefaultValues) {
         pjsua_call_setting setting;
-    
+
         pjsua_call_setting_default(&setting);
         fromPj(setting);
     } else {
@@ -260,7 +260,7 @@ pjsua_call_setting CallSetting::toPj() const
     for (mi = 0; mi < this->mediaDir.size(); mi++) {
         setting.media_dir[mi] = (pjmedia_dir)this->mediaDir[mi];
     }
-    
+
     return setting;
 }
 
@@ -295,7 +295,7 @@ void CallMediaInfo::fromPj(const pjsua_call_media_info &prm)
 void CallInfo::fromPj(const pjsua_call_info &pci)
 {
     unsigned mi;
-    
+
     id                  = pci.id;
     role                = pci.role;
     accId               = pci.acc_id;
@@ -314,16 +314,16 @@ void CallInfo::fromPj(const pjsua_call_info &pci)
     remOfferer          = PJ2BOOL(pci.rem_offerer);
     remAudioCount       = pci.rem_aud_cnt;
     remVideoCount       = pci.rem_vid_cnt;
-    
+
     for (mi = 0; mi < pci.media_cnt; mi++) {
         CallMediaInfo med;
-        
+
         med.fromPj(pci.media[mi]);
         media.push_back(med);
     }
     for (mi = 0; mi < pci.prov_media_cnt; mi++) {
         CallMediaInfo med;
-        
+
         med.fromPj(pci.prov_media[mi]);
         provMedia.push_back(med);
     }
@@ -421,7 +421,7 @@ call_param::call_param(const SipTxOption &tx_option)
         tx_option.toPj(msg_data);
         p_msg_data = &msg_data;
     }
-    
+
     p_opt = NULL;
     p_reason = NULL;
     sdp = NULL;
@@ -437,14 +437,14 @@ call_param::call_param(const SipTxOption &tx_option, const CallSetting &setting,
         tx_option.toPj(msg_data);
         p_msg_data = &msg_data;
     }
-    
+
     if (setting.isEmpty()) {
         p_opt = NULL;
     } else {
         opt = setting.toPj();
         p_opt = &opt;
     }
-    
+
     reason = str2Pj(reason_str);
     p_reason = (reason.slen == 0? NULL: &reason);
 
@@ -455,7 +455,7 @@ call_param::call_param(const SipTxOption &tx_option, const CallSetting &setting,
                                (pj_ssize_t)sdp_str.size()};
         pj_status_t status;
 
-        pj_strdup(pool, &dup_pj_sdp, &pj_sdp_str);        
+        pj_strdup(pool, &dup_pj_sdp, &pj_sdp_str);
         status = pjmedia_sdp_parse(pool, dup_pj_sdp.ptr,
                                    dup_pj_sdp.slen, &sdp);
         if (status != PJ_SUCCESS) {
@@ -474,6 +474,7 @@ Call::Call(Account& account, int call_id)
 
 Call::~Call()
 {
+    PJ_LOG(1, (THIS_FILE, "!!!! destructing Call %d", id));
     /* Remove reference to this instance from PJSUA library */
     if (id != PJSUA_INVALID_ID)
         pjsua_call_set_user_data(id, NULL);
@@ -497,7 +498,7 @@ CallInfo Call::getInfo() const PJSUA2_THROW(Error)
 {
     pjsua_call_info pj_ci;
     CallInfo ci;
-    
+
     PJSUA2_CHECK_EXPR( pjsua_call_get_info(id, &pj_ci) );
     ci.fromPj(pj_ci);
     return ci;
@@ -507,7 +508,7 @@ bool Call::isActive() const
 {
     if (id == PJSUA_INVALID_ID)
         return false;
-    
+
     return (pjsua_call_is_active(id) != 0);
 }
 
@@ -548,7 +549,7 @@ Media *Call::getMedia(unsigned med_idx) const
     {
         return NULL;
     }
-    
+
     return medias[med_idx];
 }
 
@@ -556,7 +557,7 @@ AudioMedia Call::getAudioMedia(int med_idx) const PJSUA2_THROW(Error)
 {
     pjsua_call_info pj_ci;
     pjsua_call_get_info(id, &pj_ci);
-    
+
     if (med_idx < 0) {
         for (unsigned i = 0; i < pj_ci.media_cnt; ++i) {
             if (pj_ci.media[i].type == PJMEDIA_TYPE_AUDIO &&
@@ -672,7 +673,7 @@ pjsip_dialog_cap_status Call::remoteHasCap(int htype,
 {
     pj_str_t pj_hname = str2Pj(hname);
     pj_str_t pj_token = str2Pj(token);
-    
+
     return pjsua_call_remote_has_cap(id, htype,
                                      (htype == PJSIP_H_OTHER)? &pj_hname: NULL,
                                      &pj_token);
@@ -691,9 +692,9 @@ Token Call::getUserData() const
 pj_stun_nat_type Call::getRemNatType() PJSUA2_THROW(Error)
 {
     pj_stun_nat_type nat;
-    
+
     PJSUA2_CHECK_EXPR( pjsua_call_get_rem_nat_type(id, &nat) );
-    
+
     return nat;
 }
 
@@ -702,7 +703,7 @@ void Call::makeCall(const string &dst_uri, const CallOpParam &prm)
 {
     pj_str_t pj_dst_uri = str2Pj(dst_uri);
     call_param param(prm.txOption, prm.opt, prm.reason);
-    
+
     PJSUA2_CHECK_EXPR( pjsua_call_make_call(acc.getId(), &pj_dst_uri,
                                             param.p_opt, this,
                                             param.p_msg_data, &id) );
@@ -712,7 +713,7 @@ void Call::answer(const CallOpParam &prm) PJSUA2_THROW(Error)
 {
     call_param param(prm.txOption, prm.opt, prm.reason,
                      sdp_pool, prm.sdp.wholeSdp);
-    
+
     if (param.sdp) {
         PJSUA2_CHECK_EXPR( pjsua_call_answer_with_sdp(id, param.sdp,
                                                       param.p_opt,
@@ -728,8 +729,9 @@ void Call::answer(const CallOpParam &prm) PJSUA2_THROW(Error)
 
 void Call::hangup(const CallOpParam &prm) PJSUA2_THROW(Error)
 {
+    PJ_LOG(1, (THIS_FILE, "!!!! Hangup call %d", id));
     call_param param(prm.txOption, prm.opt, prm.reason);
-    
+
     PJSUA2_CHECK_EXPR( pjsua_call_hangup(id, prm.statusCode, param.p_reason,
                                          param.p_msg_data) );
 }
@@ -737,7 +739,7 @@ void Call::hangup(const CallOpParam &prm) PJSUA2_THROW(Error)
 void Call::setHold(const CallOpParam &prm) PJSUA2_THROW(Error)
 {
     call_param param(prm.txOption, prm.opt, prm.reason);
-    
+
     PJSUA2_CHECK_EXPR( pjsua_call_set_hold2(id, prm.options,
                                             param.p_msg_data) );
 }
@@ -753,7 +755,7 @@ void Call::reinvite(const CallOpParam &prm) PJSUA2_THROW(Error)
 void Call::update(const CallOpParam &prm) PJSUA2_THROW(Error)
 {
     call_param param(prm.txOption, prm.opt, prm.reason);
-    
+
     PJSUA2_CHECK_EXPR( pjsua_call_update2(id, param.p_opt,
                                           param.p_msg_data) );
 }
@@ -763,7 +765,7 @@ void Call::xfer(const string &dest, const CallOpParam &prm)
 {
     call_param param(prm.txOption);
     pj_str_t pj_dest = str2Pj(dest);
-    
+
     PJSUA2_CHECK_EXPR( pjsua_call_xfer(id, &pj_dest, param.p_msg_data) );
 }
 
@@ -771,7 +773,7 @@ void Call::xferReplaces(const Call& dest_call,
                   const CallOpParam &prm) PJSUA2_THROW(Error)
 {
     call_param param(prm.txOption);
-    
+
     PJSUA2_CHECK_EXPR(pjsua_call_xfer_replaces(id, dest_call.getId(),
                                                prm.options,
                                                param.p_msg_data) );
@@ -785,14 +787,14 @@ void Call::processRedirect(pjsip_redirect_op cmd) PJSUA2_THROW(Error)
 void Call::dialDtmf(const string &digits) PJSUA2_THROW(Error)
 {
     pj_str_t pj_digits = str2Pj(digits);
-    
+
     PJSUA2_CHECK_EXPR(pjsua_call_dial_dtmf(id, &pj_digits));
 }
 
 void Call::sendDtmf(const CallSendDtmfParam &param) PJSUA2_THROW(Error)
 {
     pjsua_call_send_dtmf_param pj_param = param.toPj();
-    
+
     PJSUA2_CHECK_EXPR(pjsua_call_send_dtmf(id, &pj_param));
 }
 
@@ -812,7 +814,7 @@ void Call::sendTypingIndication(const SendTypingIndicationParam &prm)
     PJSUA2_THROW(Error)
 {
     call_param param(prm.txOption);
-    
+
     PJSUA2_CHECK_EXPR(pjsua_call_send_typing_ind(id,
                                                  (prm.isTyping?
                                                   PJ_TRUE: PJ_FALSE),
@@ -823,7 +825,7 @@ void Call::sendRequest(const CallSendRequestParam &prm) PJSUA2_THROW(Error)
 {
     pj_str_t method = str2Pj(prm.method);
     call_param param(prm.txOption);
-    
+
     PJSUA2_CHECK_EXPR(pjsua_call_send_request(id, &method,
                                               param.p_msg_data) );
 }
@@ -839,7 +841,7 @@ string Call::dump(bool with_media, const string indent) PJSUA2_THROW(Error)
     PJSUA2_CHECK_EXPR(pjsua_call_dump(id, (with_media? PJ_TRUE: PJ_FALSE),
                                       buffer, sizeof(buffer),
                                       indent.c_str()));
-    
+
     return buffer;
 }
 
@@ -869,7 +871,7 @@ void Call::vidSetStream(pjsua_call_vid_strm_op op,
 {
 #if PJSUA_HAS_VIDEO
     pjsua_call_vid_strm_op_param prm;
-    
+
     prm.med_idx = param.medIdx;
     prm.dir = param.dir;
     prm.cap_dev = param.capDev;
@@ -907,7 +909,7 @@ StreamInfo Call::getStreamInfo(unsigned med_idx) const PJSUA2_THROW(Error)
 {
     pjsua_stream_info pj_si;
     StreamInfo si;
-    
+
     PJSUA2_CHECK_EXPR( pjsua_call_get_stream_info(id, med_idx, &pj_si) );
     si.fromPj(pj_si);
     return si;
@@ -917,7 +919,7 @@ StreamStat Call::getStreamStat(unsigned med_idx) const PJSUA2_THROW(Error)
 {
     pjsua_stream_stat pj_ss;
     StreamStat ss;
-    
+
     PJSUA2_CHECK_EXPR( pjsua_call_get_stream_stat(id, med_idx, &pj_ss) );
     ss.fromPj(pj_ss);
     return ss;
@@ -928,7 +930,7 @@ MediaTransportInfo Call::getMedTransportInfo(unsigned med_idx) const
 {
     pjmedia_transport_info pj_mti;
     MediaTransportInfo mti;
-    
+
     PJSUA2_CHECK_EXPR( pjsua_call_get_med_transport_info(id, med_idx,
                                                          &pj_mti) );
     mti.fromPj(pj_mti);
@@ -939,7 +941,7 @@ void Call::processMediaUpdate(OnCallMediaStateParam &prm)
 {
     pjsua_call_info pj_ci;
     unsigned mi;
-    
+
     if (pjsua_call_get_info(id, &pj_ci) == PJ_SUCCESS) {
         if (medias.size()) {
             /* Clear medias. */
@@ -949,7 +951,7 @@ void Call::processMediaUpdate(OnCallMediaStateParam &prm)
                     delete medias[mi];
                 }
             }
-            medias.clear();     
+            medias.clear();
         }
 
         for (mi = 0; mi < pj_ci.media_cnt; mi++) {
@@ -960,7 +962,7 @@ void Call::processMediaUpdate(OnCallMediaStateParam &prm)
                     medias.push_back(NULL);
                 }
             }
-            
+
             if (pj_ci.media[mi].type == PJMEDIA_TYPE_AUDIO) {
                 AudioMediaHelper *aud_med = (AudioMediaHelper*)medias[mi];
                 aud_med->setPortId(pj_ci.media[mi].stream.aud.conf_slot);
@@ -975,7 +977,7 @@ void Call::processMediaUpdate(OnCallMediaStateParam &prm)
             }
         }
     }
-    
+
     /* Call media state callback. */
     onCallMediaState(prm);
 }
@@ -984,7 +986,7 @@ void Call::processStateChange(OnCallStateParam &prm)
 {
     pjsua_call_info pj_ci;
     unsigned mi;
-    
+
     if (pjsua_call_get_info(id, &pj_ci) == PJ_SUCCESS &&
         pj_ci.state == PJSIP_INV_STATE_DISCONNECTED)
     {
@@ -1001,8 +1003,8 @@ void Call::processStateChange(OnCallStateParam &prm)
                 OnStreamDestroyedParam strm_prm;
                 strm_prm.stream = call_med->strm.a.stream;
                 strm_prm.streamIdx = mi;
-    
-                onStreamDestroyed(strm_prm);            
+
+                onStreamDestroyed(strm_prm);
             }
         }
 
@@ -1018,7 +1020,7 @@ void Call::processStateChange(OnCallStateParam &prm)
         /* Remove this Call object association */
         pjsua_call_set_user_data(id, NULL);
     }
-    
+
     onCallState(prm);
     /* If the state is DISCONNECTED, this call may have already been deleted
      * by the application in the callback, so do not access it anymore here.
